@@ -2,7 +2,6 @@ using Forum.Api.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -31,7 +30,6 @@ public sealed class ForumApiFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<ForumDbContext>>();
-            services.RemoveAll<IDbContextOptionsConfiguration<ForumDbContext>>();
             services.AddDbContext<ForumDbContext>(options =>
                 options.UseInMemoryDatabase(_databaseName));
         });
