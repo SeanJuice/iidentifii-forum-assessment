@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Forum.Api.Contracts;
+using Xunit;
 
 namespace Forum.Api.Tests;
 
