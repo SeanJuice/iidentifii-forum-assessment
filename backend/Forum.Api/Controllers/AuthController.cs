@@ -79,7 +79,7 @@ public sealed class AuthController(
         }
 
         var roles = await userManager.GetRolesAsync(user);
-        return Ok(tokenService.CreateToken(user, roles));
+        return Ok(tokenService.CreateToken(user, roles.ToArray()));
     }
 
     [HttpGet("me")]
@@ -98,7 +98,7 @@ public sealed class AuthController(
             user.Id,
             user.DisplayName,
             user.Email ?? string.Empty,
-            roles));
+            roles.ToArray()));
     }
 
     private ObjectResult UnauthorizedProblem() => Unauthorized(new ProblemDetails
