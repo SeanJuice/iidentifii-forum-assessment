@@ -34,8 +34,6 @@ public sealed class ForumApiFactory : WebApplicationFactory<Program>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Jwt:Key"] = SharedJwtKey,
-                ["Jwt:Issuer"] = "Forum.Api.Tests",
-                ["Jwt:Audience"] = "Forum.Api.Tests",
                 ["Seed:DemoPassword"] = SharedDemoPassword,
             });
         });
