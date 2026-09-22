@@ -129,7 +129,10 @@ public sealed class ForumApiTests
                 $"Test User {identifier[..6]}",
                 $"user-{identifier}@example.test",
                 $"Aa1!{identifier}"));
-        response.EnsureSuccessStatusCode();
+        var responseBody = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.IsSuccessStatusCode,
+            $"Registration failed with {(int)response.StatusCode}: {responseBody}");
         var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
