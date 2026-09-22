@@ -3,12 +3,12 @@ using System.ComponentModel.DataAnnotations;
 namespace Forum.Api.Contracts;
 
 public sealed record CreatePostRequest(
-    [property: Required, StringLength(180, MinimumLength = 5)] string Title,
-    [property: Required, StringLength(10_000, MinimumLength = 10)] string Content,
+    [Required, StringLength(180, MinimumLength = 5)] string Title,
+    [Required, StringLength(10_000, MinimumLength = 10)] string Content,
     IReadOnlyCollection<string>? Topics);
 
 public sealed record CreateCommentRequest(
-    [property: Required, StringLength(4_000, MinimumLength = 2)] string Content);
+    [Required, StringLength(4_000, MinimumLength = 2)] string Content);
 
 public sealed record AuthorResponse(
     Guid Id,

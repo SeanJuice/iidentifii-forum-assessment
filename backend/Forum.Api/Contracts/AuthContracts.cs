@@ -3,13 +3,13 @@ using System.ComponentModel.DataAnnotations;
 namespace Forum.Api.Contracts;
 
 public sealed record RegisterRequest(
-    [property: Required, StringLength(100, MinimumLength = 2)] string DisplayName,
-    [property: Required, EmailAddress] string Email,
-    [property: Required, MinLength(8)] string Password);
+    [Required, StringLength(100, MinimumLength = 2)] string DisplayName,
+    [Required, EmailAddress] string Email,
+    [Required, MinLength(8)] string Password);
 
 public sealed record LoginRequest(
-    [property: Required, EmailAddress] string Email,
-    [property: Required] string Password);
+    [Required, EmailAddress] string Email,
+    [Required] string Password);
 
 public sealed record AuthResponse(
     string AccessToken,
@@ -21,4 +21,3 @@ public sealed record UserResponse(
     string DisplayName,
     string Email,
     IReadOnlyCollection<string> Roles);
-
