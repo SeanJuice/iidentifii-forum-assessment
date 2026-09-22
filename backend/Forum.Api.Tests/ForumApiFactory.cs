@@ -13,15 +13,16 @@ namespace Forum.Api.Tests;
 
 public sealed class ForumApiFactory : WebApplicationFactory<Program>
 {
+    private static readonly string SharedJwtKey = $"test-signing-key-{Guid.NewGuid():N}";
+    private static readonly string SharedDemoPassword = $"Aa1!{Guid.NewGuid():N}";
     private readonly SqliteConnection _databaseConnection = new("Data Source=:memory:");
-    private readonly string _jwtKey = $"test-signing-key-{Guid.NewGuid():N}";
 
-    public string DemoPassword { get; } = $"Aa1!{Guid.NewGuid():N}";
+    public string DemoPassword => SharedDemoPassword;
 
     public ForumApiFactory()
     {
-        Environment.SetEnvironmentVariable("Jwt__Key", _jwtKey);
-        Environment.SetEnvironmentVariable("Seed__DemoPassword", DemoPassword);
+        Environment.SetEnvironmentVariable("Jwt__Key", SharedJwtKey);
+        Environment.SetEnvironmentVariable("Seed__DemoPassword", SharedDemoPassword);
         _databaseConnection.Open();
     }
 
@@ -32,10 +33,10 @@ public sealed class ForumApiFactory : WebApplicationFactory<Program>
         {
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Jwt:Key"] = _jwtKey,
+                ["Jwt:Key"] = SharedJwtKey,
                 ["Jwt:Issuer"] = "Forum.Api.Tests",
                 ["Jwt:Audience"] = "Forum.Api.Tests",
-                ["Seed:DemoPassword"] = DemoPassword,
+                ["Seed:DemoPassword"] = SharedDemoPassword,
             });
         });
         builder.ConfigureServices(services =>
