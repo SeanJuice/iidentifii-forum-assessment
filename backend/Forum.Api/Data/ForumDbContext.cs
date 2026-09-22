@@ -29,6 +29,9 @@ public sealed class ForumDbContext(
         {
             entity.Property(post => post.Title).HasMaxLength(180);
             entity.Property(post => post.Content).HasMaxLength(10_000);
+            entity.Property(post => post.CreatedAt).HasConversion(
+                value => value.UtcDateTime.Ticks,
+                value => new DateTimeOffset(value, TimeSpan.Zero));
             entity.HasIndex(post => post.CreatedAt);
             entity.HasIndex(post => post.AuthorId);
             entity.HasOne(post => post.Author)
@@ -40,6 +43,9 @@ public sealed class ForumDbContext(
         builder.Entity<Comment>(entity =>
         {
             entity.Property(comment => comment.Content).HasMaxLength(4_000);
+            entity.Property(comment => comment.CreatedAt).HasConversion(
+                value => value.UtcDateTime.Ticks,
+                value => new DateTimeOffset(value, TimeSpan.Zero));
             entity.HasIndex(comment => new { comment.PostId, comment.CreatedAt });
             entity.HasOne(comment => comment.Author)
                 .WithMany(user => user.Comments)
@@ -50,6 +56,9 @@ public sealed class ForumDbContext(
         builder.Entity<PostLike>(entity =>
         {
             entity.HasKey(like => new { like.PostId, like.UserId });
+            entity.Property(like => like.CreatedAt).HasConversion(
+                value => value.UtcDateTime.Ticks,
+                value => new DateTimeOffset(value, TimeSpan.Zero));
             entity.HasOne(like => like.User)
                 .WithMany(user => user.Likes)
                 .HasForeignKey(like => like.UserId)
@@ -66,6 +75,9 @@ public sealed class ForumDbContext(
         builder.Entity<ModerationTag>(entity =>
         {
             entity.Property(tag => tag.Tag).HasMaxLength(80);
+            entity.Property(tag => tag.CreatedAt).HasConversion(
+                value => value.UtcDateTime.Ticks,
+                value => new DateTimeOffset(value, TimeSpan.Zero));
             entity.HasIndex(tag => tag.PostId).IsUnique();
             entity.HasOne(tag => tag.Post)
                 .WithOne(post => post.ModerationTag)
