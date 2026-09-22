@@ -5,6 +5,7 @@
 *.suo
 *.db-shm
 *.db-wal
+*.db
 
 # Angular and Node
 **/node_modules/
@@ -27,4 +28,3 @@ Thumbs.db
 # Test output
 coverage/
 TestResults/
-
