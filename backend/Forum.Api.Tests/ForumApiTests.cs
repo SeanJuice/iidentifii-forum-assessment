@@ -74,7 +74,9 @@ public sealed class ForumApiTests
         await AuthenticateNewUserAsync(client);
         var posts = await client.GetFromJsonAsync<PagedResponse<PostListItemResponse>>(
             "/api/v1/posts?page=1&pageSize=10&sortBy=date&sortDirection=desc");
-        var targetPost = Assert.Single(posts!.Items.Where(post => post.Title.Contains("retry strategy")));
+        var targetPost = Assert.Single(
+            posts!.Items,
+            post => post.Title.Contains("retry strategy"));
 
         var firstLike = await client.PostAsJsonAsync(
             $"/api/v1/posts/{targetPost.Id}/likes",

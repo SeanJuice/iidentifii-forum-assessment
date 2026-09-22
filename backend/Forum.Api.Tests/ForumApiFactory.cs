@@ -11,8 +11,15 @@ namespace Forum.Api.Tests;
 public sealed class ForumApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"forum-tests-{Guid.NewGuid():N}";
+    private readonly string _jwtKey = $"test-signing-key-{Guid.NewGuid():N}";
 
     public string DemoPassword { get; } = $"Aa1!{Guid.NewGuid():N}";
+
+    public ForumApiFactory()
+    {
+        Environment.SetEnvironmentVariable("Jwt__Key", _jwtKey);
+        Environment.SetEnvironmentVariable("Seed__DemoPassword", DemoPassword);
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -21,7 +28,7 @@ public sealed class ForumApiFactory : WebApplicationFactory<Program>
         {
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Jwt:Key"] = $"test-signing-key-{Guid.NewGuid():N}",
+                ["Jwt:Key"] = _jwtKey,
                 ["Jwt:Issuer"] = "Forum.Api.Tests",
                 ["Jwt:Audience"] = "Forum.Api.Tests",
                 ["Seed:DemoPassword"] = DemoPassword,
