@@ -1,0 +1,30 @@
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+*.db-shm
+*.db-wal
+
+# Angular and Node
+**/node_modules/
+**/dist/
+**/.angular/
+npm-debug.log*
+
+# Local configuration
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+
+# IDE and operating system
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Test output
+coverage/
+TestResults/
+
