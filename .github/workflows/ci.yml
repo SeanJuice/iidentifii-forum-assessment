@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore Iidentifii.Forum.sln
+      - name: Build
+        run: dotnet build Iidentifii.Forum.sln -c Release --no-restore
+      - name: Test
+        run: dotnet test Iidentifii.Forum.sln -c Release --no-build --collect:"XPlat Code Coverage"
+
+  web:
+    name: Angular production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/forum-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+          cache-dependency-path: frontend/forum-web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
