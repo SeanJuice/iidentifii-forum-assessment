@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { ForumTag, PostSort } from '../../core/models/forum.models';
+import { ForumTopic, PostSort } from '../../core/models/forum.models';
 import { ForumStateService } from '../../core/services/forum-state.service';
 import { PostCardComponent } from './post-card.component';
 
@@ -49,7 +49,7 @@ import { PostCardComponent } from './post-card.component';
 
           <aside class="grid grid-cols-3 gap-3 self-end rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-xl lg:grid-cols-1">
             <div class="rounded-xl bg-white/8 p-4">
-              <p class="text-2xl font-black">{{ forum.totalPosts() }}</p>
+              <p class="text-2xl font-black">{{ forum.totalItems() }}</p>
               <p class="mt-1 text-xs font-semibold text-slate-400">Discussions</p>
             </div>
             <div class="rounded-xl bg-white/8 p-4">
@@ -72,7 +72,7 @@ import { PostCardComponent } from './post-card.component';
             <p class="mt-2 text-sm text-slate-500">Browse publicly. Log in to post, comment or like.</p>
           </div>
           <a
-            routerLink="/login"
+            [routerLink]="forumAuthTarget"
             class="w-fit rounded-xl bg-violet-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-700"
           >
             Start a discussion
@@ -97,18 +97,18 @@ import { PostCardComponent } from './post-card.component';
             <fieldset class="mt-6">
               <legend class="text-sm font-extrabold text-slate-900">Topics</legend>
               <div class="mt-2 grid gap-1">
-                @for (tag of forum.tags; track tag) {
+                @for (tag of forum.topics; track tag) {
                   <button
                     type="button"
                     class="flex items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold transition"
-                    [class.bg-violet-50]="forum.selectedTag() === tag"
-                    [class.text-violet-700]="forum.selectedTag() === tag"
-                    [class.text-slate-600]="forum.selectedTag() !== tag"
-                    [class.hover:bg-slate-50]="forum.selectedTag() !== tag"
-                    (click)="selectTag(tag)"
+                    [class.bg-violet-50]="forum.selectedTopic() === tag"
+                    [class.text-violet-700]="forum.selectedTopic() === tag"
+                    [class.text-slate-600]="forum.selectedTopic() !== tag"
+                    [class.hover:bg-slate-50]="forum.selectedTopic() !== tag"
+                    (click)="selectTopic(tag)"
                   >
                     {{ tag }}
-                    @if (forum.selectedTag() === tag) {
+                    @if (forum.selectedTopic() === tag) {
                       <span aria-hidden="true">✓</span>
                     }
                   </button>
@@ -124,8 +124,8 @@ import { PostCardComponent } from './post-card.component';
                 [ngModel]="forum.sort()"
                 (ngModelChange)="selectSort($event)"
               >
-                <option value="recent">Most recent</option>
-                <option value="popular">Most liked</option>
+                <option value="date">Most recent</option>
+                <option value="likes">Most liked</option>
               </select>
             </div>
           </aside>
@@ -133,30 +133,54 @@ import { PostCardComponent } from './post-card.component';
           <div>
             <div class="mb-4 flex items-center justify-between">
               <p class="text-sm font-semibold text-slate-500">
-                {{ forum.filteredPosts().length }} discussions found
+                {{ forum.totalItems() }} discussions found
               </p>
               <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                 Public access
               </span>
             </div>
 
-            <div class="grid gap-4">
-              @for (post of forum.filteredPosts(); track post.id) {
-                <app-post-card [post]="post" (like)="forum.toggleLike($event)" />
-              } @empty {
-                <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
-                  <p class="text-lg font-extrabold text-slate-900">No discussions found</p>
-                  <p class="mt-2 text-sm text-slate-500">Try another search term or topic.</p>
-                </div>
-              }
-            </div>
+            @if (forum.errorMessage()) {
+              <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">
+                {{ forum.errorMessage() }}
+              </div>
+            }
+
+            @if (forum.loading()) {
+              <div class="grid gap-4" aria-label="Loading discussions">
+                @for (item of loadingItems; track item) {
+                  <div class="h-52 animate-pulse rounded-2xl border border-slate-200 bg-white"></div>
+                }
+              </div>
+            } @else {
+              <div class="grid gap-4">
+                @for (post of forum.filteredPosts(); track post.id) {
+                  <app-post-card [post]="post" (like)="forum.toggleLike($event)" />
+                } @empty {
+                  <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+                    <p class="text-lg font-extrabold text-slate-900">No discussions found</p>
+                    <p class="mt-2 text-sm text-slate-500">Try another search term or topic.</p>
+                  </div>
+                }
+              </div>
+            }
 
             <nav class="mt-7 flex items-center justify-between" aria-label="Pagination">
-              <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-400" disabled>
+              <button
+                type="button"
+                class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400"
+                [disabled]="forum.page() <= 1 || forum.loading()"
+                (click)="forum.setPage(forum.page() - 1)"
+              >
                 Previous
               </button>
-              <p class="text-sm font-semibold text-slate-500">Page 1 of 1</p>
-              <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-400" disabled>
+              <p class="text-sm font-semibold text-slate-500">Page {{ forum.page() }} of {{ forum.totalPages() || 1 }}</p>
+              <button
+                type="button"
+                class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400"
+                [disabled]="forum.page() >= forum.totalPages() || forum.loading()"
+                (click)="forum.setPage(forum.page() + 1)"
+              >
                 Next
               </button>
             </nav>
@@ -166,15 +190,20 @@ import { PostCardComponent } from './post-card.component';
     </main>
   `,
 })
-export class PostsPageComponent {
+export class PostsPageComponent implements OnInit {
   readonly forum = inject(ForumStateService);
+  readonly loadingItems = [1, 2, 3];
+  readonly forumAuthTarget = '/posts/new';
 
-  selectTag(tag: ForumTag | 'All'): void {
-    this.forum.setTag(tag);
+  ngOnInit(): void {
+    this.forum.loadPosts();
+  }
+
+  selectTopic(topic: ForumTopic | 'All'): void {
+    this.forum.setTopic(topic);
   }
 
   selectSort(sort: PostSort): void {
     this.forum.setSort(sort);
   }
 }
-

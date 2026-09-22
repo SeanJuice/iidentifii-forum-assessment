@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/auth.guard';
+
 export const routes: Routes = [
   {
     path: '',
@@ -8,6 +10,23 @@ export const routes: Routes = [
         (component) => component.PostsPageComponent,
       ),
     title: 'Discussions | iiDENTIFii Forum',
+  },
+  {
+    path: 'posts/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/posts/create-post-page.component').then(
+        (component) => component.CreatePostPageComponent,
+      ),
+    title: 'New discussion | iiDENTIFii Forum',
+  },
+  {
+    path: 'posts/:id',
+    loadComponent: () =>
+      import('./features/posts/post-detail-page.component').then(
+        (component) => component.PostDetailPageComponent,
+      ),
+    title: 'Discussion | iiDENTIFii Forum',
   },
   {
     path: 'login',
@@ -29,4 +48,3 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' },
 ];
-

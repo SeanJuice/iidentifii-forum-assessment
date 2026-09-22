@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
-import { ForumPost } from '../../core/models/forum.models';
+import { PostListItemResponse } from '../../core/models/forum.models';
 
 @Component({
   selector: 'app-post-card',
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article
@@ -18,7 +20,7 @@ import { ForumPost } from '../../core/models/forum.models';
           [class.text-violet-700]="post().likedByCurrentUser"
           [class.border-slate-200]="!post().likedByCurrentUser"
           [class.text-slate-500]="!post().likedByCurrentUser"
-          (click)="like.emit(post().id)"
+          (click)="like.emit(post())"
           [attr.aria-label]="post().likedByCurrentUser ? 'Unlike post' : 'Like post'"
         >
           <span class="text-sm" aria-hidden="true">▲</span>
@@ -27,7 +29,7 @@ import { ForumPost } from '../../core/models/forum.models';
 
         <div class="min-w-0 flex-1">
           <div class="mb-3 flex flex-wrap items-center gap-2">
-            @for (tag of post().tags; track tag) {
+            @for (tag of post().topics; track tag) {
               <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
                 {{ tag }}
               </span>
@@ -40,7 +42,7 @@ import { ForumPost } from '../../core/models/forum.models';
             }
           </div>
 
-          <a href="#" class="block">
+          <a [routerLink]="['/posts', post().id]" class="block">
             <h2 class="text-lg font-extrabold tracking-tight text-slate-950 transition group-hover:text-violet-700 sm:text-xl">
               {{ post().title }}
             </h2>
@@ -64,7 +66,7 @@ import { ForumPost } from '../../core/models/forum.models';
               <button
                 type="button"
                 class="flex items-center gap-1.5 transition hover:text-violet-700 sm:hidden"
-                (click)="like.emit(post().id)"
+                (click)="like.emit(post())"
               >
                 <span aria-hidden="true">▲</span>
                 {{ post().likeCount }}
@@ -81,8 +83,8 @@ import { ForumPost } from '../../core/models/forum.models';
   `,
 })
 export class PostCardComponent {
-  readonly post = input.required<ForumPost>();
-  readonly like = output<string>();
+  readonly post = input.required<PostListItemResponse>();
+  readonly like = output<PostListItemResponse>();
 
   readonly authorInitials = computed(() =>
     this.post()
@@ -105,4 +107,3 @@ export class PostCardComponent {
     return `${days}d ago`;
   });
 }
-
