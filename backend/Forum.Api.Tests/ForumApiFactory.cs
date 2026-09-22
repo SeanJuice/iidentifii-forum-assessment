@@ -1,5 +1,7 @@
 using Forum.Api.Data;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +40,19 @@ public sealed class ForumApiFactory : WebApplicationFactory<Program>
         });
         builder.ConfigureServices(services =>
         {
+            services.PostConfigure<ProblemDetailsOptions>(options =>
+            {
+                options.CustomizeProblemDetails = context =>
+                {
+                    var exception = context.HttpContext.Features
+                        .Get<IExceptionHandlerFeature>()?
+                        .Error;
+                    if (exception is not null)
+                    {
+                        context.ProblemDetails.Detail = exception.ToString();
+                    }
+                };
+            });
             services.RemoveAll<DbContextOptions<ForumDbContext>>();
             services.AddDbContext<ForumDbContext>(options =>
                 options.UseSqlite(_databaseConnection));
