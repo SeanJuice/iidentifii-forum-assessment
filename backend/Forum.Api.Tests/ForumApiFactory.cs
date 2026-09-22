@@ -1,6 +1,7 @@
 using Forum.Api.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +11,7 @@ namespace Forum.Api.Tests;
 
 public sealed class ForumApiFactory : WebApplicationFactory<Program>
 {
-    private readonly string _databaseName = $"forum-tests-{Guid.NewGuid():N}";
+    private readonly SqliteConnection _databaseConnection = new("Data Source=:memory:");
     private readonly string _jwtKey = $"test-signing-key-{Guid.NewGuid():N}";
 
     public string DemoPassword { get; } = $"Aa1!{Guid.NewGuid():N}";
@@ -19,6 +20,7 @@ public sealed class ForumApiFactory : WebApplicationFactory<Program>
     {
         Environment.SetEnvironmentVariable("Jwt__Key", _jwtKey);
         Environment.SetEnvironmentVariable("Seed__DemoPassword", DemoPassword);
+        _databaseConnection.Open();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -38,7 +40,16 @@ public sealed class ForumApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<DbContextOptions<ForumDbContext>>();
             services.AddDbContext<ForumDbContext>(options =>
-                options.UseInMemoryDatabase(_databaseName));
+                options.UseSqlite(_databaseConnection));
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing)
+        {
+            _databaseConnection.Dispose();
+        }
     }
 }
