@@ -136,6 +136,16 @@ public sealed class ForumApiTests
         var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
+
+        var currentUserResponse = await client.GetAsync("/api/v1/auth/me");
+        var currentUserBody = await currentUserResponse.Content.ReadAsStringAsync();
+        var authenticationHeaders = string.Join(
+            "; ",
+            currentUserResponse.Headers.WwwAuthenticate.Select(header => header.ToString()));
+        Assert.True(
+            currentUserResponse.IsSuccessStatusCode,
+            $"Token validation failed with {(int)currentUserResponse.StatusCode}: " +
+            $"{authenticationHeaders} {currentUserBody}");
     }
 
     private sealed record CreatedPostResponse(Guid Id);
