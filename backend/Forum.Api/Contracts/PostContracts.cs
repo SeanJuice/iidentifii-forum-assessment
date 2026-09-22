@@ -24,6 +24,7 @@ public sealed record PostListItemResponse(
     DateTimeOffset CreatedAt,
     int LikeCount,
     int CommentCount,
+    bool LikedByCurrentUser,
     bool IsFlagged);
 
 public sealed record CommentResponse(
@@ -72,4 +73,3 @@ public sealed class PostQueryParameters
     public string SortBy { get; init; } = "date";
     public string SortDirection { get; init; } = "desc";
 }
-

@@ -26,6 +26,12 @@ public sealed class PostsController(
         [FromQuery] PostQueryParameters parameters,
         CancellationToken cancellationToken)
     {
+        Guid? currentUserId = null;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            currentUserId = User.GetRequiredUserId();
+        }
+
         var query = dbContext.Posts.AsNoTracking();
 
         if (parameters.FromDate is not null)
@@ -86,6 +92,7 @@ public sealed class PostsController(
                 post.CreatedAt,
                 post.Likes.Count,
                 post.Comments.Count,
+                currentUserId != null && post.Likes.Any(like => like.UserId == currentUserId),
                 post.ModerationTag != null))
             .ToListAsync(cancellationToken);
 
@@ -403,4 +410,3 @@ public sealed class PostsController(
                 tag.CreatedAt));
     }
 }
-
