@@ -1,8 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, Subject } from 'rxjs';
 
 import {
+  AuthorFilterResponse,
   ForumTopic,
   PostListItemResponse,
   PostSort,
@@ -16,9 +17,14 @@ export class ForumStateService {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly postsState = signal<PostListItemResponse[]>([]);
+  private readonly searchChanges = new Subject<string>();
+  private loadSequence = 0;
 
   readonly query = signal('');
   readonly selectedTopic = signal<ForumTopic | 'All'>('All');
+  readonly selectedAuthorId = signal('');
+  readonly fromDate = signal('');
+  readonly toDate = signal('');
   readonly sort = signal<PostSort>('date');
   readonly page = signal(1);
   readonly pageSize = 10;
@@ -26,6 +32,7 @@ export class ForumStateService {
   readonly totalPages = signal(0);
   readonly loading = signal(false);
   readonly errorMessage = signal('');
+  readonly authors = signal<AuthorFilterResponse[]>([]);
   readonly topics: readonly (ForumTopic | 'All')[] = [
     'All',
     'API',
@@ -35,27 +42,33 @@ export class ForumStateService {
     'General',
   ];
 
-  readonly filteredPosts = computed(() => {
-    const query = this.query().trim().toLocaleLowerCase();
-
-    return this.postsState().filter(
-      (post) =>
-        query.length === 0 ||
-        post.title.toLocaleLowerCase().includes(query) ||
-        post.excerpt.toLocaleLowerCase().includes(query) ||
-        post.author.displayName.toLocaleLowerCase().includes(query),
-    );
-  });
-
-  readonly totalContributors = computed(
-    () => new Set(this.postsState().map((post) => post.author.id)).size,
+  readonly posts = this.postsState.asReadonly();
+  readonly hasActiveFilters = computed(
+    () =>
+      this.query().trim().length > 0 ||
+      this.selectedTopic() !== 'All' ||
+      this.selectedAuthorId().length > 0 ||
+      this.fromDate().length > 0 ||
+      this.toDate().length > 0,
   );
+
+  readonly totalContributors = computed(() => this.authors().length);
   readonly totalAnswers = computed(() =>
     this.postsState().reduce((total, post) => total + post.commentCount, 0),
   );
 
+  constructor() {
+    this.searchChanges
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe(() => {
+        this.page.set(1);
+        this.loadPosts();
+      });
+  }
+
   loadPosts(): void {
     const selectedTopic = this.selectedTopic();
+    const sequence = ++this.loadSequence;
     this.loading.set(true);
     this.errorMessage.set('');
     this.api
@@ -63,17 +76,33 @@ export class ForumStateService {
         page: this.page(),
         pageSize: this.pageSize,
         topic: selectedTopic === 'All' ? undefined : selectedTopic,
+        search: this.query().trim() || undefined,
+        fromDate: this.toStartOfDay(this.fromDate()),
+        toDate: this.toEndOfDay(this.toDate()),
+        authorId: this.selectedAuthorId() || undefined,
         sortBy: this.sort(),
         sortDirection: 'desc',
       })
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(
+        finalize(() => {
+          if (sequence === this.loadSequence) {
+            this.loading.set(false);
+          }
+        }),
+      )
       .subscribe({
         next: (response) => {
+          if (sequence !== this.loadSequence) {
+            return;
+          }
           this.postsState.set(response.items);
           this.totalItems.set(response.totalItems);
           this.totalPages.set(response.totalPages);
         },
         error: () => {
+          if (sequence !== this.loadSequence) {
+            return;
+          }
           this.postsState.set([]);
           this.errorMessage.set(
             'Discussions could not be loaded. Confirm that the API is running on port 5080.',
@@ -84,6 +113,14 @@ export class ForumStateService {
 
   setQuery(value: string): void {
     this.query.set(value);
+    this.searchChanges.next(value.trim());
+  }
+
+  loadAuthors(): void {
+    this.api.getAuthors().subscribe({
+      next: (authors) => this.authors.set(authors),
+      error: () => this.errorMessage.set('Contributors could not be loaded.'),
+    });
   }
 
   setTopic(value: ForumTopic | 'All'): void {
@@ -94,6 +131,35 @@ export class ForumStateService {
 
   setSort(value: PostSort): void {
     this.sort.set(value);
+    this.page.set(1);
+    this.loadPosts();
+  }
+
+  setAuthor(authorId: string): void {
+    this.selectedAuthorId.set(authorId);
+    this.page.set(1);
+    this.loadPosts();
+  }
+
+  setFromDate(value: string): void {
+    this.fromDate.set(value);
+  }
+
+  setToDate(value: string): void {
+    this.toDate.set(value);
+  }
+
+  applyDateRange(): void {
+    this.page.set(1);
+    this.loadPosts();
+  }
+
+  clearFilters(): void {
+    this.query.set('');
+    this.selectedTopic.set('All');
+    this.selectedAuthorId.set('');
+    this.fromDate.set('');
+    this.toDate.set('');
     this.page.set(1);
     this.loadPosts();
   }
@@ -134,5 +200,13 @@ export class ForumStateService {
       },
       error: () => this.errorMessage.set('The like could not be updated.'),
     });
+  }
+
+  private toStartOfDay(value: string): string | undefined {
+    return value ? new Date(`${value}T00:00:00.000Z`).toISOString() : undefined;
+  }
+
+  private toEndOfDay(value: string): string | undefined {
+    return value ? new Date(`${value}T23:59:59.999Z`).toISOString() : undefined;
   }
 }

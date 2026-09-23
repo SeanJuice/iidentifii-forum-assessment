@@ -54,7 +54,7 @@ import { PostCardComponent } from './post-card.component';
             </div>
             <div class="rounded-xl bg-white/8 p-4">
               <p class="text-2xl font-black">{{ forum.totalAnswers() }}</p>
-              <p class="mt-1 text-xs font-semibold text-slate-400">Answers</p>
+              <p class="mt-1 text-xs font-semibold text-slate-400">Answers on page</p>
             </div>
             <div class="rounded-xl bg-white/8 p-4">
               <p class="text-2xl font-black">{{ forum.totalContributors() }}</p>
@@ -79,7 +79,7 @@ import { PostCardComponent } from './post-card.component';
           </a>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div class="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
           <aside id="topics" class="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
             <label for="post-search" class="text-sm font-extrabold text-slate-900">Search</label>
             <div class="relative mt-2">
@@ -88,7 +88,7 @@ import { PostCardComponent } from './post-card.component';
                 id="post-search"
                 type="search"
                 class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:bg-white"
-                placeholder="Search posts"
+                placeholder="Search all discussions"
                 [ngModel]="forum.query()"
                 (ngModelChange)="forum.setQuery($event)"
               >
@@ -117,6 +117,52 @@ import { PostCardComponent } from './post-card.component';
             </fieldset>
 
             <div class="mt-6 border-t border-slate-100 pt-5">
+              <label for="post-author" class="text-sm font-extrabold text-slate-900">Author</label>
+              <select
+                id="post-author"
+                class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700"
+                [ngModel]="forum.selectedAuthorId()"
+                (ngModelChange)="forum.setAuthor($event)"
+              >
+                <option value="">All authors</option>
+                @for (author of forum.authors(); track author.id) {
+                  <option [value]="author.id">{{ author.displayName }} ({{ author.postCount }})</option>
+                }
+              </select>
+            </div>
+
+            <fieldset class="mt-6 border-t border-slate-100 pt-5">
+              <legend class="text-sm font-extrabold text-slate-900">Published date</legend>
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <label class="text-xs font-bold text-slate-500">
+                  From
+                  <input
+                    type="date"
+                    class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-sm font-semibold text-slate-700"
+                    [ngModel]="forum.fromDate()"
+                    (ngModelChange)="forum.setFromDate($event)"
+                  >
+                </label>
+                <label class="text-xs font-bold text-slate-500">
+                  To
+                  <input
+                    type="date"
+                    class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-sm font-semibold text-slate-700"
+                    [ngModel]="forum.toDate()"
+                    (ngModelChange)="forum.setToDate($event)"
+                  >
+                </label>
+              </div>
+              <button
+                type="button"
+                class="mt-3 w-full rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-extrabold text-violet-700 hover:bg-violet-100"
+                (click)="forum.applyDateRange()"
+              >
+                Apply date range
+              </button>
+            </fieldset>
+
+            <div class="mt-6 border-t border-slate-100 pt-5">
               <label for="post-sort" class="text-sm font-extrabold text-slate-900">Sort by</label>
               <select
                 id="post-sort"
@@ -128,6 +174,16 @@ import { PostCardComponent } from './post-card.component';
                 <option value="likes">Most liked</option>
               </select>
             </div>
+
+            @if (forum.hasActiveFilters()) {
+              <button
+                type="button"
+                class="mt-5 w-full rounded-xl px-3 py-2 text-sm font-extrabold text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                (click)="forum.clearFilters()"
+              >
+                Clear all filters
+              </button>
+            }
           </aside>
 
           <div>
@@ -154,7 +210,7 @@ import { PostCardComponent } from './post-card.component';
               </div>
             } @else {
               <div class="grid gap-4">
-                @for (post of forum.filteredPosts(); track post.id) {
+                @for (post of forum.posts(); track post.id) {
                   <app-post-card [post]="post" (like)="forum.toggleLike($event)" />
                 } @empty {
                   <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
@@ -196,6 +252,7 @@ export class PostsPageComponent implements OnInit {
   readonly forumAuthTarget = '/posts/new';
 
   ngOnInit(): void {
+    this.forum.loadAuthors();
     this.forum.loadPosts();
   }
 

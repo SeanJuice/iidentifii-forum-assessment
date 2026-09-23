@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import {
+  AuthorFilterResponse,
+  CommentQuery,
   CommentResponse,
   CreatePostRequest,
   PagedResponse,
@@ -28,11 +30,58 @@ export class ForumApiService {
       params = params.set('topic', query.topic);
     }
 
+    if (query.search) {
+      params = params.set('search', query.search);
+    }
+
+    if (query.fromDate) {
+      params = params.set('fromDate', query.fromDate);
+    }
+
+    if (query.toDate) {
+      params = params.set('toDate', query.toDate);
+    }
+
+    if (query.authorId) {
+      params = params.set('authorId', query.authorId);
+    }
+
     return this.http.get<PagedResponse<PostListItemResponse>>(this.baseUrl, { params });
   }
 
   getPost(postId: string): Observable<PostDetailResponse> {
     return this.http.get<PostDetailResponse>(`${this.baseUrl}/${postId}`);
+  }
+
+  getAuthors(): Observable<AuthorFilterResponse[]> {
+    return this.http.get<AuthorFilterResponse[]>(`${environment.apiBaseUrl}/authors`);
+  }
+
+  getComments(
+    postId: string,
+    query: CommentQuery,
+  ): Observable<PagedResponse<CommentResponse>> {
+    let params = new HttpParams()
+      .set('page', query.page)
+      .set('pageSize', query.pageSize)
+      .set('sortDirection', query.sortDirection);
+
+    if (query.fromDate) {
+      params = params.set('fromDate', query.fromDate);
+    }
+
+    if (query.toDate) {
+      params = params.set('toDate', query.toDate);
+    }
+
+    if (query.authorId) {
+      params = params.set('authorId', query.authorId);
+    }
+
+    return this.http.get<PagedResponse<CommentResponse>>(
+      `${this.baseUrl}/${postId}/comments`,
+      { params },
+    );
   }
 
   createPost(request: CreatePostRequest): Observable<{ id: string }> {
@@ -55,4 +104,3 @@ export class ForumApiService {
     return this.http.post<void>(`${this.baseUrl}/${postId}/moderation-tags`, {});
   }
 }
-

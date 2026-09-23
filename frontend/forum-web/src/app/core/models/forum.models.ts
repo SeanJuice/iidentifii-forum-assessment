@@ -32,6 +32,12 @@ export interface AuthorResponse {
   role: UserRole;
 }
 
+export interface AuthorFilterResponse {
+  id: string;
+  displayName: string;
+  postCount: number;
+}
+
 export interface PostListItemResponse {
   id: string;
   title: string;
@@ -68,7 +74,7 @@ export interface PostDetailResponse {
   updatedAt: string | null;
   likeCount: number;
   likedByCurrentUser: boolean;
-  comments: CommentResponse[];
+  commentCount: number;
   moderationTag: ModerationTagResponse | null;
 }
 
@@ -84,8 +90,21 @@ export interface PostQuery {
   page: number;
   pageSize: number;
   topic?: ForumTopic;
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+  authorId?: string;
   sortBy: PostSort;
   sortDirection: 'asc' | 'desc';
+}
+
+export interface CommentQuery {
+  page: number;
+  pageSize: number;
+  sortDirection: 'asc' | 'desc';
+  fromDate?: string;
+  toDate?: string;
+  authorId?: string;
 }
 
 export interface CreatePostRequest {
@@ -93,4 +112,3 @@ export interface CreatePostRequest {
   content: string;
   topics: ForumTopic[];
 }
-
