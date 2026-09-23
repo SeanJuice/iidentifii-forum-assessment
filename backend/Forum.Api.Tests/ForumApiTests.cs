@@ -42,6 +42,35 @@ public sealed class ForumApiTests
     }
 
     [Fact]
+    public async Task SearchIsAppliedAcrossTheServerSideResultSet()
+    {
+        await using var factory = new ForumApiFactory();
+        using var client = factory.CreateClient();
+
+        var page = await client.GetFromJsonAsync<PagedResponse<PostListItemResponse>>(
+            "/api/v1/posts?search=constant-time&page=1&pageSize=1&sortBy=date");
+
+        Assert.NotNull(page);
+        Assert.Equal(1, page.TotalItems);
+        Assert.Single(page.Items);
+        Assert.Contains("Webhook signature", page.Items.Single().Title);
+    }
+
+    [Fact]
+    public async Task AuthorsEndpointReturnsContributorsWithPostCounts()
+    {
+        await using var factory = new ForumApiFactory();
+        using var client = factory.CreateClient();
+
+        var authors = await client.GetFromJsonAsync<List<AuthorFilterResponse>>(
+            "/api/v1/authors");
+
+        Assert.NotNull(authors);
+        Assert.True(authors.Count >= 3);
+        Assert.All(authors, author => Assert.True(author.PostCount > 0));
+    }
+
+    [Fact]
     public async Task AuthorCanCreatePostButCannotLikeOwnPost()
     {
         await using var factory = new ForumApiFactory();
@@ -118,6 +147,34 @@ public sealed class ForumApiTests
             new { });
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+    }
+
+    [Fact]
+    public async Task CommentsAreReturnedAsAFilteredPagedResource()
+    {
+        await using var factory = new ForumApiFactory();
+        using var client = factory.CreateClient();
+        await AuthenticateNewUserAsync(client);
+        var posts = await client.GetFromJsonAsync<PagedResponse<PostListItemResponse>>(
+            "/api/v1/posts?search=retry%20strategy&page=1&pageSize=10");
+        var targetPost = Assert.Single(posts!.Items);
+
+        for (var index = 1; index <= 3; index++)
+        {
+            var commentResponse = await client.PostAsJsonAsync(
+                $"/api/v1/posts/{targetPost.Id}/comments",
+                new CreateCommentRequest($"Integration test answer number {index}."));
+            Assert.Equal(HttpStatusCode.Created, commentResponse.StatusCode);
+        }
+
+        var page = await client.GetFromJsonAsync<PagedResponse<CommentResponse>>(
+            $"/api/v1/posts/{targetPost.Id}/comments?page=1&pageSize=2&sortDirection=desc");
+
+        Assert.NotNull(page);
+        Assert.Equal(4, page.TotalItems);
+        Assert.Equal(2, page.Items.Count);
+        Assert.Equal(2, page.TotalPages);
+        Assert.True(page.Items.First().CreatedAt >= page.Items.Last().CreatedAt);
     }
 
     private static async Task AuthenticateNewUserAsync(HttpClient client)

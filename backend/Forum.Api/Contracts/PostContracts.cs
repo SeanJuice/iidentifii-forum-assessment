@@ -15,6 +15,11 @@ public sealed record AuthorResponse(
     string DisplayName,
     string Role);
 
+public sealed record AuthorFilterResponse(
+    Guid Id,
+    string DisplayName,
+    int PostCount);
+
 public sealed record PostListItemResponse(
     Guid Id,
     string Title,
@@ -48,7 +53,7 @@ public sealed record PostDetailResponse(
     DateTimeOffset? UpdatedAt,
     int LikeCount,
     bool LikedByCurrentUser,
-    IReadOnlyCollection<CommentResponse> Comments,
+    int CommentCount,
     ModerationTagResponse? ModerationTag);
 
 public sealed record PagedResponse<T>(
@@ -70,6 +75,22 @@ public sealed class PostQueryParameters
     public DateTimeOffset? ToDate { get; init; }
     public Guid? AuthorId { get; init; }
     public string? Topic { get; init; }
+    [StringLength(200)]
+    public string? Search { get; init; }
     public string SortBy { get; init; } = "date";
     public string SortDirection { get; init; } = "desc";
+}
+
+public sealed class CommentQueryParameters
+{
+    [Range(1, int.MaxValue)]
+    public int Page { get; init; } = 1;
+
+    [Range(1, 50)]
+    public int PageSize { get; init; } = 10;
+
+    public DateTimeOffset? FromDate { get; init; }
+    public DateTimeOffset? ToDate { get; init; }
+    public Guid? AuthorId { get; init; }
+    public string SortDirection { get; init; } = "asc";
 }

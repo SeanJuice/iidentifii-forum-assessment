@@ -55,6 +55,17 @@ public sealed class PostsController(
             query = query.Where(post => post.Topics.Any(item => item.Topic == topic));
         }
 
+        if (!string.IsNullOrWhiteSpace(parameters.Search))
+        {
+            var searchPattern = $"%{EscapeLikePattern(parameters.Search.Trim())}%";
+            query = query.Where(post =>
+                EF.Functions.Like(post.Title, searchPattern, "\\") ||
+                EF.Functions.Like(post.Content, searchPattern, "\\") ||
+                EF.Functions.Like(post.Author.DisplayName, searchPattern, "\\") ||
+                post.Topics.Any(topic =>
+                    EF.Functions.Like(topic.Topic, searchPattern, "\\")));
+        }
+
         var descending = !string.Equals(
             parameters.SortDirection,
             "asc",
@@ -145,24 +156,7 @@ public sealed class PostsController(
                 item.UpdatedAt,
                 item.Likes.Count,
                 currentUserId != null && item.Likes.Any(like => like.UserId == currentUserId),
-                item.Comments
-                    .OrderBy(comment => comment.CreatedAt)
-                    .Select(comment => new CommentResponse(
-                        comment.Id,
-                        comment.Content,
-                        new AuthorResponse(
-                            comment.Author.Id,
-                            comment.Author.DisplayName,
-                            dbContext.UserRoles
-                                .Where(userRole => userRole.UserId == comment.AuthorId)
-                                .Join(
-                                    dbContext.Roles,
-                                    userRole => userRole.RoleId,
-                                    role => role.Id,
-                                    (_, role) => role.Name)
-                                .FirstOrDefault() ?? AppRoles.User),
-                        comment.CreatedAt))
-                    .ToList(),
+                item.Comments.Count,
                 item.ModerationTag == null
                     ? null
                     : new ModerationTagResponse(
@@ -175,6 +169,80 @@ public sealed class PostsController(
             .SingleOrDefaultAsync(cancellationToken);
 
         return post is null ? NotFound() : Ok(post);
+    }
+
+    [HttpGet("{id:guid}/comments")]
+    [AllowAnonymous]
+    [ProducesResponseType<PagedResponse<CommentResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResponse<CommentResponse>>> GetComments(
+        Guid id,
+        [FromQuery] CommentQueryParameters parameters,
+        CancellationToken cancellationToken)
+    {
+        if (!await dbContext.Posts.AnyAsync(post => post.Id == id, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        var query = dbContext.Comments
+            .AsNoTracking()
+            .Where(comment => comment.PostId == id);
+
+        if (parameters.FromDate is not null)
+        {
+            query = query.Where(comment => comment.CreatedAt >= parameters.FromDate);
+        }
+
+        if (parameters.ToDate is not null)
+        {
+            query = query.Where(comment => comment.CreatedAt <= parameters.ToDate);
+        }
+
+        if (parameters.AuthorId is not null)
+        {
+            query = query.Where(comment => comment.AuthorId == parameters.AuthorId);
+        }
+
+        var descending = string.Equals(
+            parameters.SortDirection,
+            "desc",
+            StringComparison.OrdinalIgnoreCase);
+        query = descending
+            ? query.OrderByDescending(comment => comment.CreatedAt)
+            : query.OrderBy(comment => comment.CreatedAt);
+
+        var totalItems = await query.CountAsync(cancellationToken);
+        var comments = await query
+            .Skip((parameters.Page - 1) * parameters.PageSize)
+            .Take(parameters.PageSize)
+            .Select(comment => new CommentResponse(
+                comment.Id,
+                comment.Content,
+                new AuthorResponse(
+                    comment.Author.Id,
+                    comment.Author.DisplayName,
+                    dbContext.UserRoles
+                        .Where(userRole => userRole.UserId == comment.AuthorId)
+                        .Join(
+                            dbContext.Roles,
+                            userRole => userRole.RoleId,
+                            role => role.Id,
+                            (_, role) => role.Name)
+                        .FirstOrDefault() ?? AppRoles.User),
+                comment.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var totalPages = totalItems == 0
+            ? 0
+            : (int)Math.Ceiling(totalItems / (double)parameters.PageSize);
+
+        return Ok(new PagedResponse<CommentResponse>(
+            comments,
+            parameters.Page,
+            parameters.PageSize,
+            totalItems,
+            totalPages));
     }
 
     [HttpPost]
@@ -409,4 +477,9 @@ public sealed class PostsController(
                 new AuthorResponse(moderator.Id, moderator.DisplayName, AppRoles.Moderator),
                 tag.CreatedAt));
     }
+
+    private static string EscapeLikePattern(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("%", "\\%", StringComparison.Ordinal)
+        .Replace("_", "\\_", StringComparison.Ordinal);
 }
