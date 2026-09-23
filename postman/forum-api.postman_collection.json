@@ -101,6 +101,14 @@
       ]
     },
     {
+      "name": "Authors",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/authors"
+      }
+    },
+    {
       "name": "Posts",
       "item": [
         {
@@ -108,7 +116,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/v1/posts?page=1&pageSize=10&topic=Integration&sortBy=likes&sortDirection=desc"
+            "url": "{{baseUrl}}/api/v1/posts?page=1&pageSize=10&search=webhook&topic=Integration&sortBy=likes&sortDirection=desc"
           }
         },
         {
@@ -117,6 +125,14 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/v1/posts/{{postId}}"
+          }
+        },
+        {
+          "name": "List comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/posts/{{postId}}/comments?page=1&pageSize=10&sortDirection=desc"
           }
         },
         {

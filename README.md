@@ -13,7 +13,7 @@ A full-stack forum proof of concept where integration users can browse discussio
 | Authentication | ASP.NET Core Identity and JWT bearer tokens |
 | Persistence | Entity Framework Core and SQLite |
 | API documentation | OpenAPI and Swagger UI |
-| Testing | xUnit integration tests and ASP.NET Core test host |
+| Testing | xUnit API integration tests, Vitest component tests, and Playwright browser tests |
 | Automation | GitHub Actions |
 
 ## Requirements covered
@@ -26,9 +26,9 @@ A full-stack forum proof of concept where integration users can browse discussio
 | Like rules | Unique database constraint, duplicate conflict response, and self-like prevention |
 | Roles | User and Moderator roles are seeded and enforced by authorization policies |
 | Moderation | Only moderators can add the fixed misleading information tag |
-| Discovery | Filter by date, author, or topic; sort by date or likes; paginate results |
+| Discovery | Server-side search; filter by date, author, or topic; sort by date or likes; paginate posts and comments |
 | Third-party API | REST endpoints are versioned under `/api/v1` and documented with Swagger |
-| Seed data | Users, posts, comments, likes, topics, and a moderation example are seeded |
+| Seed data | 8 users and 48 dated discussions with varied comments, likes, topics, and moderation tags |
 | Delivery evidence | Incremental commits and GitHub Actions show development and validation history |
 
 ## Repository structure
@@ -105,16 +105,30 @@ All seeded accounts use the password supplied through `Seed__DemoPassword`.
 | User | `user@demo.local` |
 | User | `partner@demo.local` |
 | Moderator | `moderator@demo.local` |
+| User | `naledi@demo.local` |
+| User | `ethan@demo.local` |
+| User | `priya@demo.local` |
+| User | `kabelo@demo.local` |
+| User | `sarah@demo.local` |
 
 ## Run validation
 
 ```bash
 dotnet test Iidentifii.Forum.sln -c Release
 cd frontend/forum-web
+npm test
 npm run build
 ```
 
-GitHub Actions performs both checks on every push and pull request to `main`.
+To run the real browser integration locally, keep the same API environment variables set, install Chromium once, and run:
+
+```bash
+cd frontend/forum-web
+npx playwright install chromium
+E2E_DEMO_PASSWORD="$Seed__DemoPassword" npm run test:e2e
+```
+
+GitHub Actions performs the API tests, Angular tests, production build, and browser integration test on every push and pull request to `main`.
 
 ## API summary
 
@@ -123,8 +137,10 @@ GitHub Actions performs both checks on every push and pull request to `main`.
 | POST | `/api/v1/auth/register` | Public | Register and receive a token |
 | POST | `/api/v1/auth/login` | Public | Log in and receive a token |
 | GET | `/api/v1/auth/me` | Authenticated | Return the current user |
-| GET | `/api/v1/posts` | Public | Filtered, sorted, paginated post list |
-| GET | `/api/v1/posts/{id}` | Public | Post details and comments |
+| GET | `/api/v1/authors` | Public | List post authors for filter controls |
+| GET | `/api/v1/posts` | Public | Searchable, filtered, sorted, paginated post list |
+| GET | `/api/v1/posts/{id}` | Public | Post details and comment count |
+| GET | `/api/v1/posts/{id}/comments` | Public | Filtered, sorted, paginated comments |
 | POST | `/api/v1/posts` | Authenticated | Create a post |
 | POST | `/api/v1/posts/{id}/comments` | Authenticated | Add a comment |
 | POST | `/api/v1/posts/{id}/likes` | Authenticated | Like a post |

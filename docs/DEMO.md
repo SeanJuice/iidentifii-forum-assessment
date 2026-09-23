@@ -11,9 +11,10 @@ This walkthrough is designed for a short technical presentation.
 ## 2. Demonstrate public access
 
 - Open the home page without logging in.
-- Browse the seeded discussions.
-- Filter by topic and sort by likes.
-- Open a discussion and read its comments.
+- Browse the 48 seeded discussions and use next-page navigation.
+- Search for `constant-time` to demonstrate full-dataset server search.
+- Filter by topic, author, and date, then sort by likes.
+- Open a discussion and page, filter, and sort its comments.
 - Explain that public endpoints do not require a token.
 
 ## 3. Demonstrate a registered user
@@ -37,14 +38,16 @@ This walkthrough is designed for a short technical presentation.
 - Show the `/api/v1` routes and schemas.
 - Run the Postman login request and inspect the captured token.
 - Run list, create, comment, like, and moderation requests.
-- Explain paging, filtering, sorting, validation, and problem-details responses.
+- Run author discovery and paged comment requests.
+- Explain server-side search, paging, filtering, sorting, validation, and problem-details responses.
 
 ## 6. Demonstrate quality controls
 
 - Open the GitHub Actions workflow.
-- Show the Angular production build.
-- Show the API integration test results.
-- Highlight tests for authentication, self-likes, duplicate likes, and moderator authorization.
+- Show the Angular production build and 5 Vitest checks.
+- Show the 8 API integration tests.
+- Show the Playwright browser job that exercises Angular and the API together.
+- Highlight tests for authentication, self-likes, duplicate likes, search, comment paging, and moderator authorization.
 
 ## 7. Close with trade-offs
 

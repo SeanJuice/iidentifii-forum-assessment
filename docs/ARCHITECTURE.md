@@ -46,6 +46,7 @@ Supported post query parameters:
 
 | Parameter | Description |
 | --- | --- |
+| `search` | Case-insensitive search across title, content, author, and topic |
 | `fromDate` | Include posts created on or after this timestamp |
 | `toDate` | Include posts created on or before this timestamp |
 | `authorId` | Include posts by one author |
@@ -55,6 +56,8 @@ Supported post query parameters:
 | `page` | One-based page number |
 | `pageSize` | Number of results, up to 50 |
 
+Comments are deliberately retrieved through `/api/v1/posts/{id}/comments` instead of being embedded without a limit in the post detail response. The endpoint accepts `fromDate`, `toDate`, `authorId`, `sortDirection`, `page`, and `pageSize`, so large conversations remain bounded and independently navigable.
+
 ## Frontend
 
 The Angular application uses standalone components, reactive forms, signals, lazy-loaded routes, and a functional HTTP interceptor. Tailwind CSS supplies a responsive design system without coupling the application to a component library.
@@ -63,7 +66,9 @@ The access token and user summary are kept in session storage. This is suitable 
 
 ## Testing strategy
 
-Integration tests start the real application through `WebApplicationFactory`, replace SQLite with a unique in-memory database, and exercise the HTTP boundary. This verifies routing, model validation, Identity, JWT authentication, authorization policies, persistence, and business rules together.
+API integration tests start the real application through `WebApplicationFactory`, replace SQLite with a unique in-memory database, and exercise the HTTP boundary. This verifies routing, model validation, Identity, JWT authentication, authorization policies, persistence, and business rules together.
+
+Angular component and service tests run with Vitest and jsdom. A Playwright test then starts the real API and Angular development server, searches the seeded forum, logs in, publishes a discussion, and verifies the final routed view. This closes the integration gap between isolated backend and frontend checks.
 
 The current suite verifies:
 
@@ -73,13 +78,17 @@ The current suite verifies:
 - Self-like rejection
 - Duplicate-like conflict handling
 - Moderator-only tagging
+- Server-side full-forum search
+- Author discovery and paged comment filtering
+- Login validation and moderator UI gating
+- Angular-to-API browser workflow
 
 ## Proof-of-concept trade-offs
 
 - `EnsureCreated` is used for zero-step local setup. Production should use reviewed EF Core migrations.
 - Seeded data is created at startup. Production seeding should be separated from application startup.
 - SQLite is ideal for the assessment but a managed relational database is preferable for scale and concurrency.
-- Search is a lightweight client text filter plus server topic, author, and date filters. Production search could use database full-text search or a dedicated search service.
+- Search uses escaped SQL `LIKE` expressions across the relational dataset. Production scale could justify database full-text search or a dedicated search service.
 - Tokens are short-lived, but refresh tokens and revocation are outside the assessment scope.
 
 ## Production evolution
