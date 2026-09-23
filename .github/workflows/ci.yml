@@ -26,7 +26,7 @@ jobs:
         run: dotnet test Iidentifii.Forum.sln -c Release --no-build --collect:"XPlat Code Coverage"
 
   web:
-    name: Angular production build
+    name: Angular build and tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,5 +40,35 @@ jobs:
           cache-dependency-path: frontend/forum-web/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Test
+        run: npm test
       - name: Build
         run: npm run build
+
+  browser:
+    name: Browser integration test
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/forum-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+          cache-dependency-path: frontend/forum-web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser integration test
+        run: npm run test:e2e
+        env:
+          Jwt__Key: ci-only-signing-key-with-at-least-32-characters
+          Seed__DemoPassword: DemoPassword123!
+          E2E_DEMO_PASSWORD: DemoPassword123!
