@@ -41,7 +41,6 @@ frontend/
   forum-web/             Angular application
 docs/
   ARCHITECTURE.md        Design decisions and trade-offs
-  DEMO.md                Suggested assessment walkthrough
 postman/
   forum-api.postman_collection.json
   local.postman_environment.json
