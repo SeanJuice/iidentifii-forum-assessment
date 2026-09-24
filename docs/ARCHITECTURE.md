@@ -51,10 +51,13 @@ Supported post query parameters:
 | `toDate` | Include posts created on or before this timestamp |
 | `authorId` | Include posts by one author |
 | `topic` | Include posts with one topic |
+| `flagged` | Include only flagged or unflagged posts when set to `true` or `false` |
 | `sortBy` | `date` or `likes` |
 | `sortDirection` | `asc` or `desc` |
 | `page` | One-based page number |
 | `pageSize` | Number of results, up to 50 |
+
+Every sort ends with deterministic secondary ordering. Like sorting uses creation date and identifier tie-breakers, while date sorting uses the identifier, preventing equal values from shifting between pages.
 
 Comments are deliberately retrieved through `/api/v1/posts/{id}/comments` instead of being embedded without a limit in the post detail response. The endpoint accepts `fromDate`, `toDate`, `authorId`, `sortDirection`, `page`, and `pageSize`, so large conversations remain bounded and independently navigable.
 

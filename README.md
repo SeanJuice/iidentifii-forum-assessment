@@ -26,7 +26,7 @@ A full-stack forum proof of concept where integration users can browse discussio
 | Like rules | Unique database constraint, duplicate conflict response, and self-like prevention |
 | Roles | User and Moderator roles are seeded and enforced by authorization policies |
 | Moderation | Only moderators can add the fixed misleading information tag |
-| Discovery | Server-side search; filter by date, author, or topic; sort by date or likes; paginate posts and comments |
+| Discovery | Server-side search; filter by date, author, topic, or moderation state; sort deterministically by date or likes; paginate posts and comments |
 | Third-party API | REST endpoints are versioned under `/api/v1` and documented with Swagger |
 | Seed data | 8 users and 48 dated discussions with varied comments, likes, topics, and moderation tags |
 | Delivery evidence | Incremental commits and GitHub Actions show development and validation history |
@@ -147,7 +147,7 @@ GitHub Actions performs the API tests, Angular tests, production build, and brow
 | DELETE | `/api/v1/posts/{id}/likes` | Authenticated | Remove a like |
 | POST | `/api/v1/posts/{id}/moderation-tags` | Moderator | Add the misleading information tag |
 
-The Postman collection includes runnable examples and automatically captures tokens and created post identifiers.
+The Postman collection includes runnable happy paths, a sequenced negative-case folder, and saved examples for self-like rejection, duplicate-like conflict, and regular-user moderation denial. It automatically captures separate user and moderator tokens plus created post identifiers.
 
 ## Further information
 

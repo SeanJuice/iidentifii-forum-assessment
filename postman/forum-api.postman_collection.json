@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e98f5319-adcb-46d5-a9a9-6e5d7286aa84",
     "name": "iiDENTIFii Forum API",
-    "description": "Runnable examples for the versioned forum API. Select the local environment and set demoPassword before using seeded logins.",
+    "description": "Runnable happy-path and negative-case examples for the versioned forum API. Select the local environment, set demoPassword, and run folders in order.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -49,7 +49,9 @@
               "script": {
                 "exec": [
                   "pm.test('Authenticated', () => pm.response.to.have.status(200));",
-                  "pm.environment.set('accessToken', pm.response.json().accessToken);"
+                  "const body = pm.response.json();",
+                  "pm.environment.set('userAccessToken', body.accessToken);",
+                  "pm.environment.set('accessToken', body.accessToken);"
                 ],
                 "type": "text/javascript"
               }
@@ -73,7 +75,9 @@
               "script": {
                 "exec": [
                   "pm.test('Moderator authenticated', () => pm.response.to.have.status(200));",
-                  "pm.environment.set('accessToken', pm.response.json().accessToken);"
+                  "const body = pm.response.json();",
+                  "pm.environment.set('moderatorAccessToken', body.accessToken);",
+                  "pm.environment.set('accessToken', body.accessToken);"
                 ],
                 "type": "text/javascript"
               }
@@ -116,7 +120,15 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/v1/posts?page=1&pageSize=10&search=webhook&topic=Integration&sortBy=likes&sortDirection=desc"
+            "url": "{{baseUrl}}/api/v1/posts?page=1&pageSize=10&search=webhook&topic=Security&sortBy=likes&sortDirection=desc"
+          }
+        },
+        {
+          "name": "List flagged posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/posts?page=1&pageSize=10&flagged=true&sortBy=date&sortDirection=desc"
           }
         },
         {
@@ -143,14 +155,16 @@
               "script": {
                 "exec": [
                   "pm.test('Post created', () => pm.response.to.have.status(201));",
-                  "pm.environment.set('postId', pm.response.json().id);"
+                  "const id = pm.response.json().id;",
+                  "pm.environment.set('postId', id);",
+                  "pm.environment.set('userPostId', id);"
                 ],
                 "type": "text/javascript"
               }
             }
           ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userAccessToken}}", "type": "string" }] },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
@@ -191,11 +205,223 @@
         {
           "name": "Add moderation tag",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{moderatorAccessToken}}", "type": "string" }] },
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/api/v1/posts/{{postId}}/moderation-tags"
           }
+        }
+      ]
+    },
+    {
+      "name": "Negative cases",
+      "description": "Run this folder in order. It prepares both roles and a fresh user-owned post before demonstrating three enforced business and authorization failures.",
+      "item": [
+        {
+          "name": "1. Login as regular user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Regular user authenticated', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('userAccessToken', pm.response.json().accessToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@demo.local\",\n  \"password\": \"{{demoPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "2. Login as moderator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Moderator authenticated', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('moderatorAccessToken', pm.response.json().accessToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"moderator@demo.local\",\n  \"password\": \"{{demoPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "3. Create a user-owned post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Preparation post created', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('negativePostId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userAccessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman negative-case {{$timestamp}}\",\n  \"content\": \"This post is created to demonstrate authorization and business-rule failures.\",\n  \"topics\": [\"API\", \"Security\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/posts"
+          }
+        },
+        {
+          "name": "4. Self-like is rejected with 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Self-like rejected', () => pm.response.to.have.status(400));",
+                  "pm.test('Problem details explain the rule', () => pm.expect(pm.response.json().title).to.eql('Self-like not allowed'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userAccessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/posts/{{negativePostId}}/likes"
+          },
+          "response": [
+            {
+              "name": "400 Self-like not allowed",
+              "originalRequest": {
+                "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userAccessToken}}", "type": "string" }] },
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/posts/{{negativePostId}}/likes"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/problem+json" }],
+              "cookie": [],
+              "body": "{\n  \"title\": \"Self-like not allowed\",\n  \"status\": 400,\n  \"detail\": \"Users cannot like their own posts.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "5. Moderator likes the post once",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('First like succeeds', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{moderatorAccessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/posts/{{negativePostId}}/likes"
+          }
+        },
+        {
+          "name": "6. Duplicate like is rejected with 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Duplicate like rejected', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem details explain the conflict', () => pm.expect(pm.response.json().title).to.eql('Post already liked'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{moderatorAccessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/posts/{{negativePostId}}/likes"
+          },
+          "response": [
+            {
+              "name": "409 Post already liked",
+              "originalRequest": {
+                "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{moderatorAccessToken}}", "type": "string" }] },
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/posts/{{negativePostId}}/likes"
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/problem+json" }],
+              "cookie": [],
+              "body": "{\n  \"title\": \"Post already liked\",\n  \"status\": 409,\n  \"detail\": \"A user may only like a post once.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "7. Regular user moderation is rejected with 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Regular user cannot moderate', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userAccessToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/posts/{{negativePostId}}/moderation-tags"
+          },
+          "response": [
+            {
+              "name": "403 Moderator role required",
+              "originalRequest": {
+                "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userAccessToken}}", "type": "string" }] },
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/posts/{{negativePostId}}/moderation-tags"
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
         }
       ]
     }

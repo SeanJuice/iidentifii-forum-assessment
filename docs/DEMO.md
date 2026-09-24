@@ -13,7 +13,7 @@ This walkthrough is designed for a short technical presentation.
 - Open the home page without logging in.
 - Browse the 48 seeded discussions and use next-page navigation.
 - Search for `constant-time` to demonstrate full-dataset server search.
-- Filter by topic, author, and date, then sort by likes.
+- Filter by topic, author, date, and moderation status, then sort by likes.
 - Open a discussion and page, filter, and sort its comments.
 - Explain that public endpoints do not require a token.
 
@@ -39,6 +39,7 @@ This walkthrough is designed for a short technical presentation.
 - Run the Postman login request and inspect the captured token.
 - Run list, create, comment, like, and moderation requests.
 - Run author discovery and paged comment requests.
+- Run the Postman `Negative cases` folder and open its saved `400`, `409`, and `403` examples.
 - Explain server-side search, paging, filtering, sorting, validation, and problem-details responses.
 
 ## 6. Demonstrate quality controls
