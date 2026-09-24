@@ -75,6 +75,7 @@ public sealed class PostQueryParameters
     public DateTimeOffset? ToDate { get; init; }
     public Guid? AuthorId { get; init; }
     public string? Topic { get; init; }
+    public bool? Flagged { get; init; }
     [StringLength(200)]
     public string? Search { get; init; }
     public string SortBy { get; init; } = "date";

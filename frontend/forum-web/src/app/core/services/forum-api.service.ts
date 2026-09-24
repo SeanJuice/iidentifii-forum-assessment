@@ -46,6 +46,10 @@ export class ForumApiService {
       params = params.set('authorId', query.authorId);
     }
 
+    if (query.flagged !== undefined) {
+      params = params.set('flagged', query.flagged);
+    }
+
     return this.http.get<PagedResponse<PostListItemResponse>>(this.baseUrl, { params });
   }
 

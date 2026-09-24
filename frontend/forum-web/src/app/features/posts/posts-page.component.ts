@@ -163,6 +163,20 @@ import { PostCardComponent } from './post-card.component';
             </fieldset>
 
             <div class="mt-6 border-t border-slate-100 pt-5">
+              <label for="post-moderation" class="text-sm font-extrabold text-slate-900">Moderation status</label>
+              <select
+                id="post-moderation"
+                class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700"
+                [ngModel]="forum.selectedModeration()"
+                (ngModelChange)="forum.setModeration($event)"
+              >
+                <option value="all">All discussions</option>
+                <option value="flagged">Flagged</option>
+                <option value="unflagged">Not flagged</option>
+              </select>
+            </div>
+
+            <div class="mt-6 border-t border-slate-100 pt-5">
               <label for="post-sort" class="text-sm font-extrabold text-slate-900">Sort by</label>
               <select
                 id="post-sort"

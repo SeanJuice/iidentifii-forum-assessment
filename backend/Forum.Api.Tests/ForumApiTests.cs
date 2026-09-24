@@ -57,6 +57,50 @@ public sealed class ForumApiTests
     }
 
     [Fact]
+    public async Task FlaggedFilterReturnsOnlyTheRequestedModerationState()
+    {
+        await using var factory = new ForumApiFactory();
+        using var client = factory.CreateClient();
+
+        var flagged = await client.GetFromJsonAsync<PagedResponse<PostListItemResponse>>(
+            "/api/v1/posts?flagged=true&page=1&pageSize=50");
+        var unflagged = await client.GetFromJsonAsync<PagedResponse<PostListItemResponse>>(
+            "/api/v1/posts?flagged=false&page=1&pageSize=50");
+
+        Assert.NotNull(flagged);
+        Assert.NotEmpty(flagged.Items);
+        Assert.All(flagged.Items, post => Assert.True(post.IsFlagged));
+        Assert.NotNull(unflagged);
+        Assert.NotEmpty(unflagged.Items);
+        Assert.All(unflagged.Items, post => Assert.False(post.IsFlagged));
+        Assert.Equal(48, flagged.TotalItems + unflagged.TotalItems);
+    }
+
+    [Fact]
+    public async Task LikeSortingUsesDateAsADeterministicTieBreaker()
+    {
+        await using var factory = new ForumApiFactory();
+        using var client = factory.CreateClient();
+
+        var page = await client.GetFromJsonAsync<PagedResponse<PostListItemResponse>>(
+            "/api/v1/posts?page=1&pageSize=50&sortBy=likes&sortDirection=desc");
+
+        Assert.NotNull(page);
+        Assert.Equal(48, page.Items.Count);
+        var items = page.Items.ToArray();
+        for (var index = 1; index < items.Length; index++)
+        {
+            var previous = items[index - 1];
+            var current = items[index];
+            Assert.True(previous.LikeCount >= current.LikeCount);
+            if (previous.LikeCount == current.LikeCount)
+            {
+                Assert.True(previous.CreatedAt >= current.CreatedAt);
+            }
+        }
+    }
+
+    [Fact]
     public async Task AuthorsEndpointReturnsContributorsWithPostCounts()
     {
         await using var factory = new ForumApiFactory();

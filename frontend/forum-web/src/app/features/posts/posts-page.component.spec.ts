@@ -13,6 +13,7 @@ describe('PostsPageComponent', () => {
     query: signal(''),
     selectedTopic: signal<'All'>('All'),
     selectedAuthorId: signal(''),
+    selectedModeration: signal<'all'>('all'),
     fromDate: signal(''),
     toDate: signal(''),
     sort: signal<'date'>('date'),
@@ -33,6 +34,7 @@ describe('PostsPageComponent', () => {
     setTopic: vi.fn(),
     setSort: vi.fn(),
     setAuthor: vi.fn(),
+    setModeration: vi.fn(),
     setFromDate: vi.fn(),
     setToDate: vi.fn(),
     applyDateRange: vi.fn(),
@@ -44,6 +46,7 @@ describe('PostsPageComponent', () => {
   beforeEach(async () => {
     state.loadAuthors.mockClear();
     state.loadPosts.mockClear();
+    state.setModeration.mockClear();
     await TestBed.configureTestingModule({
       imports: [PostsPageComponent],
       providers: [
@@ -62,5 +65,15 @@ describe('PostsPageComponent', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain(
       'The forum service is unavailable.',
     );
+  });
+
+  it('forwards moderation filter changes to the forum state', () => {
+    const select = fixture.nativeElement.querySelector(
+      '#post-moderation',
+    ) as HTMLSelectElement;
+    select.value = 'flagged';
+    select.dispatchEvent(new Event('change'));
+
+    expect(state.setModeration).toHaveBeenCalledWith('flagged');
   });
 });

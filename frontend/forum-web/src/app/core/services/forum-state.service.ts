@@ -23,6 +23,7 @@ export class ForumStateService {
   readonly query = signal('');
   readonly selectedTopic = signal<ForumTopic | 'All'>('All');
   readonly selectedAuthorId = signal('');
+  readonly selectedModeration = signal<'all' | 'flagged' | 'unflagged'>('all');
   readonly fromDate = signal('');
   readonly toDate = signal('');
   readonly sort = signal<PostSort>('date');
@@ -48,6 +49,7 @@ export class ForumStateService {
       this.query().trim().length > 0 ||
       this.selectedTopic() !== 'All' ||
       this.selectedAuthorId().length > 0 ||
+      this.selectedModeration() !== 'all' ||
       this.fromDate().length > 0 ||
       this.toDate().length > 0,
   );
@@ -80,6 +82,10 @@ export class ForumStateService {
         fromDate: this.toStartOfDay(this.fromDate()),
         toDate: this.toEndOfDay(this.toDate()),
         authorId: this.selectedAuthorId() || undefined,
+        flagged:
+          this.selectedModeration() === 'all'
+            ? undefined
+            : this.selectedModeration() === 'flagged',
         sortBy: this.sort(),
         sortDirection: 'desc',
       })
@@ -141,6 +147,12 @@ export class ForumStateService {
     this.loadPosts();
   }
 
+  setModeration(value: 'all' | 'flagged' | 'unflagged'): void {
+    this.selectedModeration.set(value);
+    this.page.set(1);
+    this.loadPosts();
+  }
+
   setFromDate(value: string): void {
     this.fromDate.set(value);
   }
@@ -158,6 +170,7 @@ export class ForumStateService {
     this.query.set('');
     this.selectedTopic.set('All');
     this.selectedAuthorId.set('');
+    this.selectedModeration.set('all');
     this.fromDate.set('');
     this.toDate.set('');
     this.page.set(1);

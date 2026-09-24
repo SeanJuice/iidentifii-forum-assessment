@@ -94,6 +94,7 @@ export interface PostQuery {
   fromDate?: string;
   toDate?: string;
   authorId?: string;
+  flagged?: boolean;
   sortBy: PostSort;
   sortDirection: 'asc' | 'desc';
 }

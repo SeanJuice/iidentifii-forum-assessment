@@ -55,6 +55,13 @@ public sealed class PostsController(
             query = query.Where(post => post.Topics.Any(item => item.Topic == topic));
         }
 
+        if (parameters.Flagged is not null)
+        {
+            query = parameters.Flagged.Value
+                ? query.Where(post => post.ModerationTag != null)
+                : query.Where(post => post.ModerationTag == null);
+        }
+
         if (!string.IsNullOrWhiteSpace(parameters.Search))
         {
             var searchPattern = $"%{EscapeLikePattern(parameters.Search.Trim())}%";
@@ -72,10 +79,20 @@ public sealed class PostsController(
             StringComparison.OrdinalIgnoreCase);
         query = parameters.SortBy.ToLowerInvariant() switch
         {
-            "likes" when descending => query.OrderByDescending(post => post.Likes.Count),
-            "likes" => query.OrderBy(post => post.Likes.Count),
-            "date" when descending => query.OrderByDescending(post => post.CreatedAt),
-            _ => query.OrderBy(post => post.CreatedAt),
+            "likes" when descending => query
+                .OrderByDescending(post => post.Likes.Count)
+                .ThenByDescending(post => post.CreatedAt)
+                .ThenBy(post => post.Id),
+            "likes" => query
+                .OrderBy(post => post.Likes.Count)
+                .ThenByDescending(post => post.CreatedAt)
+                .ThenBy(post => post.Id),
+            "date" when descending => query
+                .OrderByDescending(post => post.CreatedAt)
+                .ThenBy(post => post.Id),
+            _ => query
+                .OrderBy(post => post.CreatedAt)
+                .ThenBy(post => post.Id),
         };
 
         var totalItems = await query.CountAsync(cancellationToken);
@@ -209,8 +226,8 @@ public sealed class PostsController(
             "desc",
             StringComparison.OrdinalIgnoreCase);
         query = descending
-            ? query.OrderByDescending(comment => comment.CreatedAt)
-            : query.OrderBy(comment => comment.CreatedAt);
+            ? query.OrderByDescending(comment => comment.CreatedAt).ThenBy(comment => comment.Id)
+            : query.OrderBy(comment => comment.CreatedAt).ThenBy(comment => comment.Id);
 
         var totalItems = await query.CountAsync(cancellationToken);
         var comments = await query
